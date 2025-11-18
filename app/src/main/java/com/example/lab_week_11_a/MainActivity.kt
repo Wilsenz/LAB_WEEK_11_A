@@ -1,46 +1,52 @@
 package com.example.lab_week_11_a
 
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModel
-import android.widget.TextView
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import kotlin.jvm.java
 
 class MainActivity : AppCompatActivity() {
-    override fun onCreate(savedInstanceState: Bundle?)
-    {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Get the preference wrapper from the application
-        val preferenceWrapper = (application as
-                PreferenceApplication).preferenceWrapper
-        val preferenceViewModel = ViewModelProvider(this, object :
-            ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return PreferenceViewModel(preferenceWrapper) as T
-            }
-        })[PreferenceViewModel::class.java]
+        // 1. Ambil SettingsStore dari Application
+        val settingsStore = (application as SettingsApplication).settingsStore
 
-        // Observe the text live data
-        preferenceViewModel.getText().observe(this
-        ) {
-            // Update the text view when the text live data changes
-            findViewById<TextView>(
-                R.id.activity_main_text_view
-            ).text = it
+        // 2. Inisialisasi SettingsViewModel menggunakan Factory
+        // Ini mengatasi error 'Cannot infer type' dan 'Unresolved reference'
+        val settingsViewModel = ViewModelProvider(this, object : ViewModelProvider.Factory {
+            // override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T { // (Untuk API level yang lebih tinggi)
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                // Pastikan settingsStore menjadi parameter constructor
+                return SettingsViewModel(settingsStore) as T
+            }
+        })[SettingsViewModel::class.java]
+
+        // Mendapatkan referensi komponen UI
+        val textView = findViewById<TextView>(R.id.activity_main_text_view)
+        val editText = findViewById<EditText>(R.id.activity_main_edit_text)
+        val button = findViewById<Button>(R.id.activity_main_button)
+
+        // 3. Amati (Observe) LiveData dari ViewModel
+        // Ini mengatasi error 'Unresolved reference 'preferenceViewModel'' dan 'Unresolved reference 'it''
+        settingsViewModel.textLiveData.observe(this) { text ->
+            // Update TextView setiap kali data berubah
+            textView.text = text
         }
-        findViewById<Button>(R.id.activity_main_button).setOnClickListener {
-            // Save the text when the button is clicked
-            preferenceViewModel.saveText(
-                findViewById<EditText>(R.id.activity_main_edit_text)
-                    .text.toString()
-            )
+
+        // 4. Atur aksi saat tombol diklik
+        // Ini mengatasi error 'Unresolved reference 'setOnClickListener'' dan 'Unresolved reference 'saveText''
+        button.setOnClickListener {
+            // Ambil teks dari EditText
+            val input = editText.text.toString()
+            // Simpan teks menggunakan ViewModel
+            settingsViewModel.saveText(input)
         }
     }
 }
